@@ -1,12 +1,10 @@
-# Mot de passe genere par Terraform (jamais ecrit en clair dans le code)
 resource "random_password" "vm" {
-  length           = 24
-  special          = true
-  override_special = "!#$%*-_=+"
+  length  = 16
+  special = true
 }
 
 resource "azurerm_network_interface" "nic" {
-  name                = "nic-${var.vm_name}"
+  name                = "nic-vm"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   tags                = local.tags
@@ -24,7 +22,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
   location                        = azurerm_resource_group.rg.location
   size                            = var.vm_size
   admin_username                  = var.admin_username
-  admin_password                  = random_password.vm.result # ETAPE 12 : remplace par azurerm_key_vault_secret.vm_password.value
+  admin_password                  = random_password.vm.result
   disable_password_authentication = false
   network_interface_ids           = [azurerm_network_interface.nic.id]
   tags                            = local.tags
@@ -37,7 +35,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
   source_image_reference {
     publisher = "Canonical"
     offer     = "ubuntu-24_04-lts"
-    sku       = "server"
+    sku       = "server-arm64"
     version   = "latest"
   }
 }
