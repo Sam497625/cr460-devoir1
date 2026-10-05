@@ -1,47 +1,41 @@
-variable "location" {
-  default = "canadacentral"
+resource "random_password" "vm" {
+  length  = 16
+  special = true
 }
 
-variable "resource_group_name" {
-  default = "rg-cr460-devoir1"
+resource "azurerm_network_interface" "nic" {
+  name                = "nic-vm"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  tags                = local.tags
+
+  ip_configuration {
+    name                          = "internal"
+    subnet_id                     = azurerm_subnet.vm_subnet.id
+    private_ip_address_allocation = "Dynamic"
+  }
 }
 
-variable "vnet_name" {
-  default = "vnet-cr460"
-}
+resource "azurerm_linux_virtual_machine" "vm" {
+  name                            = var.vm_name
+  resource_group_name             = azurerm_resource_group.rg.name
+  location                        = azurerm_resource_group.rg.location
+  size                            = var.vm_size
+  admin_username                  = var.admin_username
+  admin_password                  = random_password.vm.result
+  disable_password_authentication = false
+  network_interface_ids           = [azurerm_network_interface.nic.id]
+  tags                            = local.tags
 
-variable "vm_name" {
-  default = "vm-cr460"
-}
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
 
-variable "vm_size" {
-  default = "Standard_B2pts_v2"
-}
-
-variable "admin_username" {
-  default = "azureuser"
-}
-
-variable "project_tag" {
-  default = "DevoirCR460"
-}
-
-variable "keyvault_name" {
-  default = "kv-cr460-sam497625"
-}
-
-variable "acr_name" {
-  default = "acrcr460sam497625"
-}
-
-variable "container_name" {
-  default = "aci-cr460"
-}
-
-variable "container_dns_label" {
-  default = "cr460-devoir1-sam497625"
-}
-
-variable "image_tag" {
-  default = "latest"
+  source_image_reference {
+    publisher = "Canonical"
+    offer     = "ubuntu-24_04-lts"
+    sku       = "server-arm64"
+    version   = "latest"
+  }
 }
