@@ -39,7 +39,7 @@ variable "project_tag" {
 }
 
 variable "keyvault_name" {
-  description = "Nom du Key Vault (unique mondialement, 3-24 car., lettres/chiffres/tirets)"
+  description = "Nom du Key Vault"
   type        = string
   default     = "kv-cr460-sam497625"
 }
