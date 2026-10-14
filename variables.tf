@@ -47,7 +47,7 @@ variable "keyvault_name" {
 variable "acr_name" {
   description = "Nom de l'Azure Container Registry (unique mondialement, minuscules/chiffres seulement)"
   type        = string
-  default     = "acrcr460VaEtreChangePlusTard" # ecrase par le workflow GitHub Actions (-var)
+  default     = "acrcr460sam497625" # ecrase par le workflow GitHub Actions (-var)
 }
 
 variable "container_name" {
