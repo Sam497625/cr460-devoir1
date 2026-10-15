@@ -1,10 +1,15 @@
 name: Terraform
+
 on:
   push:
     branches: [main]
   workflow_dispatch:
+
+env:
+  ACR_NAME: acrcr460sam497625
+
 jobs:
-  terraform:
+  plan:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -14,4 +19,33 @@ jobs:
       - run: terraform init -input=false
       - run: terraform validate
       - run: terraform plan -input=false
-      - run: terraform apply -auto-approve -input=false
+
+  apply:
+    needs: plan
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+      - run: terraform init -input=false
+
+      - name: Creer le groupe et l'ACR
+        run: terraform apply -auto-approve -input=false -target=azurerm_resource_group.rg -target=azurerm_container_registry.acr
+
+      - name: Envoyer l'image dans l'ACR
+        env:
+          CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+          TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+        run: |
+          az login --service-principal -u "$CLIENT_ID" -p "$CLIENT_SECRET" --tenant "$TENANT_ID"
+          USER=$(az acr credential show -n $ACR_NAME --query username -o tsv)
+          PASS=$(az acr credential show -n $ACR_NAME --query "passwords[0].value" -o tsv)
+          echo "$PASS" | docker login $ACR_NAME.azurecr.io -u "$USER" --password-stdin
+          docker build -t $ACR_NAME.azurecr.io/cr460-web:latest ./app
+          docker push $ACR_NAME.azurecr.io/cr460-web:latest
+
+      - name: Deployer le reste
+        run: terraform apply -auto-approve -input=false
